@@ -1,53 +1,67 @@
-import os
-import json
+import streamlit as st
 import numpy as np
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
 from tensorflow import keras
 import base64
-import logging
-
-# Configurar logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import os
 
 # ============================================================================
-# INICIALIZACIÓN DE FLASK
+# CONFIGURACIÓN DE STREAMLIT
 # ============================================================================
 
-app = Flask(__name__)
-CORS(app)  # Permitir peticiones desde el frontend
+st.set_page_config(
+    page_title="🔐 Desencriptador IA",
+    page_icon="🔐",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Estilos personalizados
+st.markdown("""
+    <style>
+        .main {
+            padding: 2rem;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .result-box {
+            padding: 1.5rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 1rem 0;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # ============================================================================
-# CARGAR MODELO ENTRENADO
+# CARGAR MODELO
 # ============================================================================
 
-MODEL = None
-
-def load_model():
-    """Carga el modelo entrenado al inicio de la aplicación"""
-    global MODEL
+@st.cache_resource
+def load_model_tf():
+    """Carga el modelo de TensorFlow"""
     try:
-        MODEL = keras.models.load_model('modelo_cifrado.h5')
-        logger.info("✓ Modelo cargado exitosamente: modelo_cifrado.h5")
+        model_path = 'modelo_cifrado.h5'
+        if not os.path.exists(model_path):
+            st.error("❌ Modelo no encontrado: modelo_cifrado.h5")
+            return None
+        model = keras.models.load_model(model_path)
+        return model
     except Exception as e:
-        logger.error(f"✗ Error cargando modelo: {e}")
-        logger.warning("Por favor, ejecuta 'python train_model.py' primero para generar el modelo.")
-        MODEL = None
+        st.error(f"❌ Error cargando modelo: {e}")
+        return None
 
 # ============================================================================
 # FUNCIONES DE DESENCRIPTACIÓN
 # ============================================================================
 
 def decrypt_caesar(text):
-    """
-    Intenta desencriptar Caesar cipher probando todos los shifts posibles
-    Devuelve el resultado más probable
-    """
+    """Intenta desencriptar Caesar cipher"""
     best_result = text
     best_score = 0
     
-    # Palabras comunes en inglés para detectar el mejor resultado
     common_words = {'the', 'is', 'and', 'to', 'of', 'a', 'in', 'that', 'it', 'for',
                     'was', 'with', 'be', 'have', 'this', 'from', 'at', 'by', 'on', 'are'}
     
@@ -62,7 +76,6 @@ def decrypt_caesar(text):
             else:
                 decrypted += char
         
-        # Contar palabras comunes encontradas
         words = decrypted.lower().split()
         score = sum(1 for word in words if word in common_words)
         
@@ -73,7 +86,7 @@ def decrypt_caesar(text):
     return best_result
 
 def decrypt_rot13(text):
-    """Desencripta ROT13 (es lo mismo que encriptar)"""
+    """Desencripta ROT13"""
     return decrypt_caesar(text)
 
 def decrypt_base64(text):
@@ -88,34 +101,30 @@ def decrypt_xor(text, key=42):
     return ''.join([chr(ord(char) ^ key) for char in text])
 
 def decrypt_plain(text):
-    """Texto plano, no requiere desencriptación"""
+    """Texto plano"""
     return text
 
 # ============================================================================
-# FUNCIÓN DE EXTRACCIÓN DE CARACTERÍSTICAS
+# EXTRACCIÓN DE CARACTERÍSTICAS
 # ============================================================================
 
 def extract_features(text):
-    """
-    Extrae 25 características mejoradas del texto para mejor discriminación
-    """
+    """Extrae 25 características del texto"""
     features = []
     
     if len(text) == 0:
         return np.zeros(25, dtype=np.float32)
     
-    # Características básicas
     letters = sum(1 for c in text if c.isalpha())
     digits = sum(1 for c in text if c.isdigit())
     specials = sum(1 for c in text if not c.isalnum() and not c.isspace())
     spaces = sum(1 for c in text if c.isspace())
     
-    features.append(letters / len(text))              # 0: proporción letras
-    features.append(digits / len(text))               # 1: proporción dígitos
-    features.append(specials / len(text))             # 2: proporción especiales
-    features.append(spaces / len(text))               # 3: proporción espacios
+    features.append(letters / len(text))
+    features.append(digits / len(text))
+    features.append(specials / len(text))
+    features.append(spaces / len(text))
     
-    # Entropía Shannon mejorada
     freq = {}
     for char in text:
         freq[char] = freq.get(char, 0) + 1
@@ -123,270 +132,249 @@ def extract_features(text):
     for count in freq.values():
         p = count / len(text)
         entropy -= p * np.log2(p) if p > 0 else 0
-    features.append(entropy / 8)                      # 4: entropía normalizada
+    features.append(entropy / 8)
     
-    # Estadísticas de frecuencias
     char_freqs = sorted(freq.values(), reverse=True)
-    if len(char_freqs) > 0:
-        features.append(char_freqs[0] / len(text))    # 5: freq max char
-    else:
-        features.append(0)
+    features.append(char_freqs[0] / len(text) if len(char_freqs) > 0 else 0)
+    features.append(char_freqs[1] / len(text) if len(char_freqs) > 1 else 0)
+    features.append(len(freq) / len(text))
     
-    if len(char_freqs) > 1:
-        features.append(char_freqs[1] / len(text))    # 6: freq 2do char
-    else:
-        features.append(0)
-    
-    features.append(len(freq) / len(text))            # 7: diversidad (chars únicos / total)
-    
-    # Proporción de caracteres imprimibles válidos
     printable_count = sum(1 for c in text if 32 <= ord(c) <= 126)
-    features.append(printable_count / len(text))      # 8: chars imprimibles válidos
+    features.append(printable_count / len(text))
     
-    # Detección de patrones Base64
     base64_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
     base64_matches = sum(1 for c in text if c in base64_chars)
-    features.append(base64_matches / len(text))       # 9: coincidencias Base64
+    features.append(base64_matches / len(text))
     
-    # Proporción de caracteres en diferentes tipos
     uppercase = sum(1 for c in text if c.isupper())
     lowercase = sum(1 for c in text if c.islower())
+    features.append(uppercase / len(text))
+    features.append(lowercase / len(text))
     
-    features.append(uppercase / len(text))            # 10: proporción mayúsculas
-    features.append(lowercase / len(text))            # 11: proporción minúsculas
-    
-    # Varianza de frecuencias (patrón uniforme vs no uniforme)
     if len(char_freqs) > 1:
         avg_freq = np.mean(char_freqs)
         variance = np.var(char_freqs)
-        features.append(variance / (avg_freq ** 2) if avg_freq > 0 else 0)  # 12: CV frecuencias
+        features.append(variance / (avg_freq ** 2) if avg_freq > 0 else 0)
     else:
         features.append(0)
     
-    # Números de control ASCII (caracteres especiales raros)
     control_chars = sum(1 for c in text if ord(c) < 32 or ord(c) > 126)
-    features.append(control_chars / len(text))        # 13: caracteres control
+    features.append(control_chars / len(text))
     
-    # Proporción de =, +, / (típicos en Base64)
     padding_chars = sum(1 for c in text if c in '=+/')
-    features.append(padding_chars / len(text))        # 14: padding/encoding chars
+    features.append(padding_chars / len(text))
     
-    # Longitud normalizada (diferentes características para textos cortos vs largos)
-    features.append(min(len(text) / 50, 1.0))         # 15: longitud relativa
+    features.append(min(len(text) / 50, 1.0))
     
-    # Proporción de secuencias alfabéticas (ROT13, Caesar vs random)
     alpha_sequences = 0
     for i in range(len(text) - 1):
         if text[i].isalpha() and text[i+1].isalpha():
             alpha_sequences += 1
-    features.append(alpha_sequences / len(text) if len(text) > 1 else 0)  # 16: secuencias alfa
+    features.append(alpha_sequences / len(text) if len(text) > 1 else 0)
     
-    # Proporción de vocales vs consonantes (muy diferente en texto plano vs cifrado)
     vowels = sum(1 for c in text.lower() if c in 'aeiou')
     consonants = sum(1 for c in text.lower() if c.isalpha() and c not in 'aeiou')
-    features.append(vowels / len(text))               # 17: proporción vocales
-    features.append(consonants / len(text))           # 18: proporción consonantes
+    features.append(vowels / len(text))
+    features.append(consonants / len(text))
     
-    # Ratio vocales / consonantes (muy característico del idioma)
-    if consonants > 0:
-        features.append(vowels / consonants)          # 19: ratio vocal/consonante
-    else:
-        features.append(0)
+    features.append(vowels / consonants if consonants > 0 else 0)
     
-    # Proporción de caracteres ASCII altos (128-255) - típicos en XOR mal manejado
     high_ascii = sum(1 for c in text if ord(c) > 127)
-    features.append(high_ascii / len(text))           # 20: ASCII alto
+    features.append(high_ascii / len(text))
     
-    # Número de espacios únicos en posiciones específicas
-    if ' ' in text:
-        features.append(1.0)                          # 21: tiene espacios
-    else:
-        features.append(0)
+    features.append(1.0 if ' ' in text else 0)
     
-    # Longitud promedio de palabras (texto plano tiene palabras coherentes)
     words = text.split()
     if words:
         avg_word_len = np.mean([len(w) for w in words])
-        features.append(min(avg_word_len / 15, 1.0))  # 22: longitud promedio palabras
+        features.append(min(avg_word_len / 15, 1.0))
     else:
         features.append(0)
     
-    # Patrones de repetición
     repeated_chars = sum(1 for i in range(len(text)-1) if text[i] == text[i+1])
-    features.append(repeated_chars / len(text))       # 23: repeticiones
+    features.append(repeated_chars / len(text))
     
-    # Chi-cuadrado simplificado contra distribución esperada
-    expected_freq = len(text) / 26  # Esperado para 26 letras del alfabeto
+    expected_freq = len(text) / 26
     chi_square = 0
     for c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':
         observed = sum(1 for char in text if char.lower() == c.lower())
         if expected_freq > 0:
             chi_square += ((observed - expected_freq) ** 2) / expected_freq
-    features.append(min(chi_square / 100, 1.0))      # 24: chi-square normalizado
+    features.append(min(chi_square / 100, 1.0))
     
     return np.array(features, dtype=np.float32)
 
 # ============================================================================
-# MAPEO DE CLASIFICACIONES
+# INTERFAZ STREAMLIT
 # ============================================================================
 
-CIPHER_TYPES = {
-    0: "Texto plano",
-    1: "Caesar",
-    2: "ROT13",
-    3: "Base64",
-    4: "XOR"
+# Encabezado
+st.markdown("""
+    <div class='header'>
+        <h1>🔐 Desencriptador IA</h1>
+        <p>Sistema Inteligente de Identificación y Desencriptación de Texto usando Redes Neuronales</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# Cargar modelo
+MODEL = load_model_tf()
+
+if MODEL is None:
+    st.error("⚠️ No se pudo cargar el modelo. Verifica que modelo_cifrado.h5 existe.")
+    st.stop()
+
+# Barra lateral
+with st.sidebar:
+    st.header("ℹ️ Información")
+    st.markdown("""
+        ### Tipos de Cifrado Soportados:
+        - **Texto Plano**: Sin cifrado
+        - **Caesar**: Rotación alfabética variable
+        - **ROT13**: Rotación exacta de 13
+        - **Base64**: Codificación estándar
+        - **XOR**: Operación XOR bit a bit
+        
+        ### Cómo Usar:
+        1. Ingresa o pega texto cifrado
+        2. Haz clic en "Analizar"
+        3. El modelo detectará el tipo y lo desencriptará
+    """)
+
+# Entrada del usuario
+st.header("📝 Ingrese Texto Cifrado")
+
+texto_cifrado = st.text_area(
+    "Pegue o escriba el texto encriptado que desea analizar",
+    height=150,
+    placeholder="Ejemplo: Uryyb Jbeyq"
+)
+
+# Ejemplos rápidos
+col1, col2, col3, col4, col5 = st.columns(5)
+
+ejemplos = {
+    "ROT13": "Uryyb Jbeyq",
+    "Caesar": "Khoor Zruog",
+    "Base64": "SGVsbG8gV29ybGQ=",
+    "XOR": "chr(72 ^ 42)",
+    "Plano": "Hello World"
 }
 
-DECRYPT_FUNCTIONS = {
-    0: decrypt_plain,
-    1: decrypt_caesar,
-    2: decrypt_rot13,
-    3: decrypt_base64,
-    4: decrypt_xor
-}
+if col1.button("📋 ROT13"):
+    texto_cifrado = "Uryyb Jbeyq"
+if col2.button("📋 Caesar"):
+    texto_cifrado = "Khoor Zruog"
+if col3.button("📋 Base64"):
+    texto_cifrado = "SGVsbG8gV29ybGQ="
+if col4.button("📋 Texto"):
+    texto_cifrado = "Hello World"
 
-# ============================================================================
-# RUTAS DE LA API
-# ============================================================================
+# Botón analizar
+st.markdown("---")
+col_btn1, col_btn2 = st.columns([1, 4])
 
-@app.route('/', methods=['GET'])
-def home():
-    """Ruta principal - sirve el archivo index.html"""
-    return send_from_directory('.', 'index.html')
+if col_btn1.button("🔍 **ANALIZAR**", use_container_width=True):
+    if not texto_cifrado.strip():
+        st.warning("⚠️ Por favor, ingresa un texto para analizar")
+    elif len(texto_cifrado.strip()) < 3:
+        st.warning("⚠️ El texto debe tener al menos 3 caracteres")
+    else:
+        with st.spinner("Analizando..."):
+            # Extraer características
+            features = extract_features(texto_cifrado)
+            features_array = np.array([features], dtype=np.float32)
+            
+            # Predicción
+            predictions = MODEL.predict(features_array, verbose=0)
+            class_idx = np.argmax(predictions[0])
+            confidence = float(predictions[0][class_idx])
+            
+            # Mapeo de clases
+            cipher_types = {
+                0: 'Texto Plano',
+                1: 'Caesar',
+                2: 'ROT13',
+                3: 'Base64',
+                4: 'XOR'
+            }
+            
+            tipo_cifrado = cipher_types.get(class_idx, 'Desconocido')
+            
+            # Desencriptadores
+            desencriptadores = {
+                0: decrypt_plain,
+                1: decrypt_caesar,
+                2: decrypt_rot13,
+                3: decrypt_base64,
+                4: decrypt_xor
+            }
+            
+            desencriptador = desencriptadores.get(class_idx, decrypt_plain)
+            mensaje_descifrado = desencriptador(texto_cifrado)
+            
+            # Mostrar resultados
+            st.success("✅ Análisis completado")
+            
+            st.markdown("---")
+            st.header("📊 Resultados")
+            
+            # Resultados en columnas
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric(
+                    "🔑 Tipo de Cifrado",
+                    tipo_cifrado,
+                    delta=None
+                )
+            
+            with col2:
+                st.metric(
+                    "🎯 Confianza",
+                    f"{confidence*100:.1f}%",
+                    delta=None
+                )
+            
+            with col3:
+                st.metric(
+                    "📏 Longitud",
+                    f"{len(texto_cifrado)} caracteres",
+                    delta=None
+                )
+            
+            # Texto original
+            st.markdown("### 🔒 Texto Original (Cifrado)")
+            st.code(texto_cifrado, language="text")
+            
+            # Mensaje desencriptado
+            st.markdown("### 🔓 Mensaje Desencriptado")
+            st.markdown(f"""
+                <div class='result-box'>
+                    <h3>{mensaje_descifrado}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Barra de confianza
+            st.markdown("### 📈 Confianza del Modelo")
+            st.progress(min(confidence, 1.0))
+            
+            # Probabilidades de todas las clases
+            st.markdown("### 🔬 Probabilidades por Clase")
+            
+            probs_df = {
+                'Clase': list(cipher_types.values()),
+                'Probabilidad': [f"{p*100:.2f}%" for p in predictions[0]]
+            }
+            
+            import pandas as pd
+            df = pd.DataFrame(probs_df)
+            st.dataframe(df, use_container_width=True)
 
-@app.route('/analizar', methods=['POST'])
-def analizar():
-    """
-    Endpoint principal para analizar y desencriptar texto
-    
-    Recibe JSON con:
-    {
-        "texto_cifrado": "texto encriptado aquí"
-    }
-    
-    Devuelve JSON con:
-    {
-        "tipo_cifrado": "Nombre del cifrado detectado",
-        "mensaje_descifrado": "Texto desencriptado",
-        "confianza": 0.95,
-        "status": "success"
-    }
-    """
-    try:
-        # Verificar que el modelo está cargado
-        if MODEL is None:
-            return jsonify({
-                'status': 'error',
-                'mensaje': 'Modelo no cargado. Por favor, ejecuta train_model.py primero.'
-            }), 500
-        
-        # Obtener datos de la petición
-        data = request.get_json()
-        
-        if not data or 'texto_cifrado' not in data:
-            return jsonify({
-                'status': 'error',
-                'mensaje': 'Se requiere un campo "texto_cifrado" en el JSON'
-            }), 400
-        
-        texto_cifrado = data['texto_cifrado']
-        
-        if not texto_cifrado or len(texto_cifrado.strip()) == 0:
-            return jsonify({
-                'status': 'error',
-                'mensaje': 'El texto cifrado no puede estar vacío'
-            }), 400
-        
-        # Extraer características
-        features = extract_features(texto_cifrado)
-        
-        # Realizar predicción
-        features_batch = np.expand_dims(features, axis=0)
-        predicciones = MODEL.predict(features_batch, verbose=0)
-        
-        # Obtener clase predicha y confianza
-        clase_predicha = np.argmax(predicciones[0])
-        confianza = float(predicciones[0][clase_predicha])
-        
-        # Obtener nombre del cifrado
-        tipo_cifrado = CIPHER_TYPES.get(clase_predicha, "Desconocido")
-        
-        # Desencriptar usando la función correspondiente
-        decrypt_func = DECRYPT_FUNCTIONS.get(clase_predicha, decrypt_plain)
-        mensaje_descifrado = decrypt_func(texto_cifrado)
-        
-        # Devolver resultado
-        return jsonify({
-            'status': 'success',
-            'tipo_cifrado': tipo_cifrado,
-            'mensaje_descifrado': mensaje_descifrado,
-            'confianza': round(confianza, 4),
-            'texto_original': texto_cifrado
-        })
-    
-    except Exception as e:
-        logger.error(f"Error en /analizar: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'mensaje': f'Error al procesar la petición: {str(e)}'
-        }), 500
-
-@app.route('/test', methods=['GET'])
-def test():
-    """Endpoint de prueba para verificar que el servidor está activo"""
-    return jsonify({
-        'status': 'ok',
-        'mensaje': 'Servidor activo y funcionando',
-        'modelo_cargado': MODEL is not None
-    })
-
-@app.route('/styles.css', methods=['GET'])
-def serve_css():
-    """Sirve el archivo CSS"""
-    return send_from_directory('.', 'styles.css')
-
-@app.route('/script.js', methods=['GET'])
-def serve_js():
-    """Sirve el archivo JavaScript"""
-    return send_from_directory('.', 'script.js')
-
-# ============================================================================
-# MANEJO DE ERRORES
-# ============================================================================
-
-@app.errorhandler(404)
-def not_found(error):
-    """Manejo de rutas no encontradas"""
-    return jsonify({
-        'status': 'error',
-        'mensaje': 'Ruta no encontrada. Usa POST /analizar'
-    }), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Manejo de errores internos"""
-    return jsonify({
-        'status': 'error',
-        'mensaje': 'Error interno del servidor'
-    }), 500
-
-# ============================================================================
-# PUNTO DE ENTRADA
-# ============================================================================
-
-if __name__ == '__main__':
-    print("=" * 70)
-    print("INICIANDO SERVIDOR DE DESENCRIPTACIÓN CON IA")
-    print("=" * 70)
-    
-    # Cargar modelo
-    load_model()
-    
-    # Iniciar servidor
-    print("\n✓ Servidor iniciado en http://localhost:5000")
-    print("✓ Frontend: Abre index.html en tu navegador")
-    print("✓ API: POST http://localhost:5000/analizar")
-    print("\n" + "=" * 70)
-    
-    app.run(debug=True, port=5000, host='0.0.0.0')
+# Footer
+st.markdown("---")
+st.markdown("""
+    <div style='text-align: center; color: gray; font-size: 12px;'>
+        <p>Sistema Inteligente de Desencriptación | TensorFlow/Keras | Streamlit</p>
+        <p>Precisión: ~92% | Creado con IA</p>
+    </div>
+""", unsafe_allow_html=True)
