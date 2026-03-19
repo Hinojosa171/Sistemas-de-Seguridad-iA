@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 # INICIALIZACIÓN DE FLASK
 # ============================================================================
 
-app = Flask(__name__, static_folder='../public', static_url_path='')
+# Determinar ruta de archivos estáticos
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATIC_FOLDER = os.path.join(BASE_DIR, 'public')
+
+app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='')
 CORS(app)  # Permitir peticiones desde el frontend
 
 # ============================================================================
@@ -237,7 +241,10 @@ def extract_features(text):
 @app.route('/')
 def index():
     """Sirve el archivo HTML principal"""
-    return send_from_directory(app.static_folder, 'index.html')
+    try:
+        return send_from_directory(STATIC_FOLDER, 'index.html')
+    except:
+        return jsonify({'status': 'error', 'mensaje': 'Interfaz no disponible'}), 404
 
 @app.route('/analizar', methods=['POST'])
 def analizar():

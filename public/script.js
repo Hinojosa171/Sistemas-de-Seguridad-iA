@@ -7,9 +7,22 @@
 // CONFIGURACIÓN
 // ============================================================================
 
-// Detecta si está en producción (Vercel) o desarrollo (localhost)
+// Detecta el ambiente y configura la URL de la API
 const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_URL = isDevelopment ? 'http://localhost:5000' : '/api';
+const isRender = window.location.hostname.includes('onrender.com');
+const isVercel = window.location.hostname.includes('vercel.app');
+
+let API_URL;
+if (isDevelopment) {
+    API_URL = 'http://localhost:5000';
+} else if (isRender) {
+    API_URL = ''; // Mismo dominio en Render
+} else if (isVercel) {
+    API_URL = '/api';
+} else {
+    API_URL = '';
+}
+
 const ENDPOINT_ANALIZAR = `${API_URL}/analizar`;
 
 // Elementos del DOM
