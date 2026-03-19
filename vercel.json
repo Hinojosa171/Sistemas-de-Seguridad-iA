@@ -4,20 +4,10 @@
   "env": {
     "FLASK_ENV": "production"
   },
-  "buildCommand": "pip install -r requirements.txt",
-  "functions": {
-    "api/app.py": {
-      "runtime": "python3.12"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/app.py"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
     },
     {
       "source": "/((?!api/.*).*)",
@@ -57,4 +47,3 @@
     }
   ]
 }
-
