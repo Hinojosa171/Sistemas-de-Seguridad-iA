@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Inteligente de Identificación y Desencriptación de Texto</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🔐 Desencriptador IA</h1>
+                <p class="subtitle">Sistema Inteligente de Identificación y Desencriptación de Texto usando Redes Neuronales</p>
+            </div>
+        </header>
+
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <!-- Sección de entrada -->
+            <section class="input-section">
+                <div class="card">
+                    <h2>Ingrese Texto Cifrado</h2>
+                    <p class="section-description">Pegue o escriba el texto encriptado que desea analizar y desencriptar</p>
+                    
+                    <textarea 
+                        id="textoCifrado" 
+                        class="textarea" 
+                        placeholder="Ejemplo: Uryyb Jbeyq"
+                        rows="6"></textarea>
+                    
+                    <div class="button-group">
+                        <button id="btnAnalizar" class="btn btn-primary">
+                            <span class="btn-text">Analizar</span>
+                            <span class="btn-icon">🔍</span>
+                        </button>
+                        <button id="btnLimpiar" class="btn btn-secondary">Limpiar</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Indicador de carga -->
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Analizando texto...</p>
+            </div>
+
+            <!-- Sección de resultados -->
+            <section id="resultadosSection" class="results-section hidden">
+                <div class="card results-card">
+                    <h2>Resultados del Análisis</h2>
+                    
+                    <!-- Resultado del tipo de cifrado -->
+                    <div class="result-item">
+                        <label class="result-label">Tipo de Cifrado Detectado:</label>
+                        <div class="result-value result-cipher">
+                            <span id="tipoCifrado" class="cipher-badge">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Confianza del modelo -->
+                    <div class="result-item">
+                        <label class="result-label">Confianza del Modelo:</label>
+                        <div class="confidence-container">
+                            <div id="confidenceBar" class="confidence-bar">
+                                <div id="confidenceFill" class="confidence-fill" style="width: 0%;"></div>
+                            </div>
+                            <span id="confidencePercent" class="confidence-percent">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Texto desencriptado -->
+                    <div class="result-item">
+                        <label class="result-label">Mensaje Desencriptado:</label>
+                        <div class="result-value result-message">
+                            <p id="mensajeDescifrado" class="message-text">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Texto original (para referencia) -->
+                    <div class="result-item">
+                        <label class="result-label">Texto Original (Cifrado):</label>
+                        <div class="result-value result-original">
+                            <p id="textoOriginal" class="original-text">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="button-group">
+                        <button id="btnCopiar" class="btn btn-success">
+                            <span>📋 Copiar Mensaje</span>
+                        </button>
+                        <button id="btnNuevoAnalisis" class="btn btn-secondary">
+                            <span>🔄 Nuevo Análisis</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección de error -->
+            <section id="errorSection" class="error-section hidden">
+                <div class="card error-card">
+                    <h3>⚠️ Error</h3>
+                    <p id="errorMessage" class="error-text">-</p>
+                    <button id="btnDescartar" class="btn btn-secondary">Descartar</button>
+                </div>
+            </section>
+
+            <!-- Sección de información -->
+            <section class="info-section">
+                <div class="card info-card">
+                    <h3>ℹ️ Información del Sistema</h3>
+                    <div class="info-content">
+                        <div class="info-item">
+                            <strong>Tipos de Cifrado Detectados:</strong>
+                            <ul>
+                                <li><span class="code">0</span> - Texto plano</li>
+                                <li><span class="code">1</span> - Caesar</li>
+                                <li><span class="code">2</span> - ROT13</li>
+                                <li><span class="code">3</span> - Base64</li>
+                                <li><span class="code">4</span> - XOR</li>
+                            </ul>
+                        </div>
+                        <div class="info-item">
+                            <strong>Cómo funciona:</strong>
+                            <ol>
+                                <li>Ingresa un texto cifrado</li>
+                                <li>El sistema analiza sus características</li>
+                                <li>Una red neuronal neuronal predice el tipo de cifrado</li>
+                                <li>Se aplica el algoritmo de desencriptación correspondiente</li>
+                                <li>Se muestra el mensaje original</li>
+                            </ol>
+                        </div>
+                        <div class="info-item">
+                            <strong>Ejemplos de prueba:</strong>
+                            <button class="example-btn" data-example="Uryyb Jbeyq">ROT13: "Uryyb Jbeyq"</button>
+                            <button class="example-btn" data-example="SGVsbG8gV29ybGQ=">Base64: "SGVsbG8gV29ybGQ="</button>
+                            <button class="example-btn" data-example="Hello World">Texto Plano: "Hello World"</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Pie de página -->
+        <footer class="footer">
+            <p>Sistema Inteligente de Identificación y Desencriptación | Powered by TensorFlow & Flask</p>
+        </footer>
+    </div>
+
+    <!-- Script -->
+    <script src="script.js"></script>
+</body>
+</html>

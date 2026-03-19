@@ -1,0 +1,606 @@
+/* ============================================================================
+   RESET Y VARIABLES GLOBALES
+   ============================================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #2196F3;
+    --danger-color: #f44336;
+    --warning-color: #FFC107;
+    --success-color: #4CAF50;
+    --light-bg: #f5f5f5;
+    --card-bg: #ffffff;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --border-color: #ddd;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+/* ============================================================================
+   ESTILOS GLOBALES
+   ============================================================================ */
+
+html, body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ============================================================================
+   CONTAINER Y LAYOUT
+   ============================================================================ */
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================================================
+   ENCABEZADO
+   ============================================================================ */
+
+.header {
+    text-align: center;
+    color: white;
+    margin-bottom: 40px;
+    padding: 30px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    animation: slideDown 0.6s ease;
+}
+
+.header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header .subtitle {
+    font-size: 1.1em;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================================
+   CONTENIDO PRINCIPAL
+   ============================================================================ */
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Tarjetas */
+.card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: var(--shadow);
+    animation: fadeIn 0.5s ease;
+}
+
+.card h2 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-size: 1.8em;
+}
+
+.card h3 {
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================================
+   SECCIÓN DE ENTRADA
+   ============================================================================ */
+
+.input-section {
+    animation: fadeIn 0.5s ease;
+}
+
+.section-description {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 0.95em;
+}
+
+/* Textarea */
+.textarea {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    resize: vertical;
+    min-height: 150px;
+    transition: var(--transition);
+    margin-bottom: 20px;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    background-color: #f8f9fa;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.textarea::placeholder {
+    color: #aaa;
+}
+
+/* ============================================================================
+   BOTONES
+   ============================================================================ */
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    flex: 1;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.btn-secondary {
+    background-color: var(--text-secondary);
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: #555;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.btn-text {
+    flex: 1;
+}
+
+.btn-icon {
+    font-size: 1.2em;
+}
+
+/* ============================================================================
+   INDICADOR DE CARGA
+   ============================================================================ */
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    background: var(--card-bg);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    animation: slideDown 0.3s ease;
+}
+
+.loading.hidden {
+    display: none;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--secondary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading p {
+    color: var(--text-secondary);
+    font-size: 1.1em;
+}
+
+/* ============================================================================
+   SECCIÓN DE RESULTADOS
+   ============================================================================ */
+
+.results-section {
+    animation: slideDown 0.4s ease;
+}
+
+.results-section.hidden {
+    display: none;
+}
+
+.results-card {
+    border-left: 5px solid var(--primary-color);
+}
+
+.result-item {
+    margin-bottom: 25px;
+}
+
+.result-label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
+.result-value {
+    background-color: var(--light-bg);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.result-cipher {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.cipher-badge {
+    background: linear-gradient(135deg, var(--secondary-color), #1976D2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.result-message, .result-original {
+    background-color: #fafafa;
+    border-left: 3px solid var(--primary-color);
+}
+
+.message-text, .original-text {
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.8;
+}
+
+/* Barra de confianza */
+.confidence-container {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.confidence-bar {
+    flex: 1;
+    height: 25px;
+    background-color: #e0e0e0;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.confidence-fill {
+    height: 100%;
+    background-color: var(--success-color);
+    transition: width 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+}
+
+.confidence-percent {
+    font-weight: 600;
+    min-width: 50px;
+    text-align: right;
+    color: var(--text-primary);
+}
+
+/* ============================================================================
+   SECCIÓN DE ERROR
+   ============================================================================ */
+
+.error-section {
+    animation: slideDown 0.3s ease;
+}
+
+.error-section.hidden {
+    display: none;
+}
+
+.error-card {
+    border-left: 5px solid var(--danger-color);
+    background-color: #ffebee;
+}
+
+.error-card h3 {
+    color: var(--danger-color);
+}
+
+.error-text {
+    color: #c62828;
+    line-height: 1.8;
+    margin-bottom: 15px;
+    white-space: pre-wrap;
+}
+
+/* ============================================================================
+   SECCIÓN DE INFORMACIÓN
+   ============================================================================ */
+
+.info-section {
+    margin-top: 20px;
+}
+
+.info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.info-card h3 {
+    color: white;
+    margin-bottom: 20px;
+}
+
+.info-content {
+    display: grid;
+    gap: 20px;
+}
+
+.info-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.info-item strong {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 1.05em;
+}
+
+.info-item ul, .info-item ol {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.info-item li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.code {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    margin: 0 4px;
+}
+
+/* Botones de ejemplos */
+.example-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+    margin: 5px 5px 5px 0;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.example-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+/* ============================================================================
+   PIE DE PÁGINA
+   ============================================================================ */
+
+.footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: white;
+    font-size: 0.9em;
+    margin-top: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    .header h1 {
+        font-size: 1.8em;
+    }
+
+    .header .subtitle {
+        font-size: 1em;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .btn-primary {
+        flex: none;
+    }
+
+    .confidence-container {
+        flex-direction: column;
+    }
+
+    .confidence-percent {
+        width: 100%;
+        text-align: center;
+    }
+
+    .info-content {
+        grid-template-columns: 1fr;
+    }
+
+    .textarea {
+        min-height: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 1.4em;
+    }
+
+    .card h2 {
+        font-size: 1.3em;
+    }
+
+    .card {
+        padding: 15px;
+    }
+
+    .btn {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+}
+
+/* ============================================================================
+   ACCESIBILIDAD Y UTILIDADES
+   ============================================================================ */
+
+.hidden {
+    display: none !important;
+}
+
+:focus-visible {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+}
+
+/* Reducir animaciones para usuarios con preferencia */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ============================================================================
+   SCROLLBAR PERSONALIZADO
+   ============================================================================ */
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--light-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #1976D2;
+}
