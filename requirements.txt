@@ -1,7 +1,6 @@
-Flask==2.3.3
-Flask-CORS==4.0.0
-TensorFlow>=2.10.0
-Keras>=2.10.0
-NumPy>=1.24.0
-gunicorn==21.2.0
+streamlit==1.40.1
+pandas==2.2.3
+numpy>=1.24.0
+tensorflow>=2.10.0
+keras>=2.10.0
 
